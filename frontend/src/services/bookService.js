@@ -1,55 +1,46 @@
-// Service layer for book operations - will be replaced with Firebase calls
+// Service layer for book operations using Firebase
+import { FirebaseService } from "./firebaseService"
+
 class BookService {
   static async borrowBook(bookId) {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    // In real implementation, this would update Firestore
-    console.log(`Borrowing book with ID: ${bookId}`)
-
-    // Simulate potential errors (5% chance)
-    if (Math.random() < 0.05) {
-      throw new Error("Failed to borrow book. Please try again.")
+    try {
+      // Get current book data
+      const books = await FirebaseService.getAllBooks()
+      const book = books.find((b) => b.id === bookId)
+      if (!book || book.available === 0) {
+        throw new Error("Book is not available to borrow.")
+      }
+      await FirebaseService.updateBookAvailability(bookId, book.available - 1)
+      await FirebaseService.logTransaction(bookId, "borrow")
+      return { success: true, message: "Book borrowed successfully!" }
+    } catch (error) {
+      throw new Error(error.message || "Failed to borrow book. Please try again.")
     }
-
-    return { success: true, message: "Book borrowed successfully!" }
   }
 
   static async returnBook(bookId) {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    // In real implementation, this would update Firestore
-    console.log(`Returning book with ID: ${bookId}`)
-
-    // Simulate potential errors (5% chance)
-    if (Math.random() < 0.05) {
-      throw new Error("Failed to return book. Please try again.")
+    try {
+      // Get current book data
+      const books = await FirebaseService.getAllBooks()
+      const book = books.find((b) => b.id === bookId)
+      if (!book || book.available >= book.quantity) {
+        throw new Error("All copies are already returned.")
+      }
+      await FirebaseService.updateBookAvailability(bookId, book.available + 1)
+      await FirebaseService.logTransaction(bookId, "return")
+      return { success: true, message: "Book returned successfully!" }
+    } catch (error) {
+      throw new Error(error.message || "Failed to return book. Please try again.")
     }
-
-    return { success: true, message: "Book returned successfully!" }
   }
 
   static async addBook(bookData) {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // In real implementation, this would add to Firestore
-    console.log("Adding book to Firestore:", bookData)
-
-    // Simulate potential errors (10% chance)
-    if (Math.random() < 0.1) {
-      throw new Error("Failed to add book. Please try again.")
+    try {
+      const id = await FirebaseService.addBook(bookData)
+      return { success: true, book: { id, ...bookData }, message: "Book added successfully!" }
+    } catch (error) {
+      throw new Error(error.message || "Failed to add book. Please try again.")
     }
-
-    const newBook = {
-      id: Date.now().toString(),
-      ...bookData,
-      available: bookData.quantity,
-      createdAt: new Date().toISOString(),
-    }
-
-    return { success: true, book: newBook, message: "Book added successfully!" }
   }
 }
 
